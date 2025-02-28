@@ -76,22 +76,6 @@ public class HeapBenchmark {
         Comparator<Integer> comparator = Integer::compareTo;
 
         // For each input size, create new heap instances and benchmark them.
-        for (int size : inputSizes) {
-            System.out.println("=== Benchmarking for input size: " + size + " ===");
 
-            // Create new instances for each benchmark run.
-            PriorityQueueInterface<Integer> basicBinaryHeap = new PriorityQueue<>(capacity, max, comparator, false);
-            PriorityQueueInterface<Integer> binaryHeapFloyd = new PriorityQueue<>(capacity, max, comparator, true);
-            PriorityQueueInterface<Integer> basic4aryHeap = new FourAryHeap<>(capacity, max, comparator, false);
-            PriorityQueueInterface<Integer> fouraryFloydHeap = new FourAryHeap<>(capacity, max, comparator, true);
-            PriorityQueueInterface<Integer> fibonacciHeap = new FibonacciHeap<>(capacity, max, comparator);
-
-            // Run the benchmark for each implementation.
-            benchmarkHeap(basicBinaryHeap, "Basic Binary Heap", size, numRemove);
-            benchmarkHeap(binaryHeapFloyd, "Binary Heap with Floyd's Trick", size, numRemove);
-            benchmarkHeap(basic4aryHeap, "Basic 4-ary Heap", size, numRemove);
-            benchmarkHeap(fouraryFloydHeap, "4-ary Heap with Floyd's Trick", size, numRemove);
-            benchmarkHeap(fibonacciHeap, "Fibonacci Heap", size, numRemove);
-        }
     }
 }

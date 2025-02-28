@@ -14,17 +14,4 @@ import java.util.Comparator;
  */
 public class FourAryHeap<K> extends PriorityQueue<K> {
 
-    public FourAryHeap(int n, boolean max, Comparator<K> comparator, boolean floyd) {
-        super(n, 1, max, comparator, floyd);
-    }
-
-    @Override
-    protected int parent(int k) {
-        return (k - 2) / 4 + 1;
-    }
-
-    @Override
-    protected int firstChild(int k) {
-        return 4 * (k - 1) + 2;
-    }
 }
