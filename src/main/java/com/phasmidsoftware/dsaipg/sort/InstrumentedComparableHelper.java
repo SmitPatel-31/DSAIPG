@@ -37,7 +37,7 @@ public class InstrumentedComparableHelper<X extends Comparable<X>> extends Instr
     }
 
     /**
-     * Constructor to create a Helper
+     * Constructor to create a Helpera
      *
      * @param description the description of this Helper (for humans).
      * @param n           the number of elements expected to be sorted. The field n is mutable so can be set after the constructor.

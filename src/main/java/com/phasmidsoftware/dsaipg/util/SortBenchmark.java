@@ -270,6 +270,7 @@ public class SortBenchmark {
      * @param configSection the appropriate config section.
      * @return same as configured totalComparisons, unless n >= 32,000.
      */
+
     private static double getTotalWork(long n, Config config, final String configSection) {
         long z = config.getLong(configSection, "totalwork", 100_000_000L);
         long x = n / 512_000 + 1; // NOTE this is integer division
