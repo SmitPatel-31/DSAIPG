@@ -4,15 +4,16 @@
 
 package com.phasmidsoftware.dsaipg.sort.linearithmic;
 
+import java.util.Arrays;
+
 import com.phasmidsoftware.dsaipg.sort.Helper;
 import com.phasmidsoftware.dsaipg.sort.SortException;
 import com.phasmidsoftware.dsaipg.sort.SortWithComparableHelper;
 import com.phasmidsoftware.dsaipg.sort.elementary.InsertionSort;
 import com.phasmidsoftware.dsaipg.util.Config;
-
-import java.util.Arrays;
-
-import static com.phasmidsoftware.dsaipg.util.Config_Benchmark.*;
+import static com.phasmidsoftware.dsaipg.util.Config_Benchmark.CUTOFF;
+import static com.phasmidsoftware.dsaipg.util.Config_Benchmark.CUTOFF_DEFAULT;
+import static com.phasmidsoftware.dsaipg.util.Config_Benchmark.HELPER;
 
 /**
  * Class MergeSort.
@@ -72,15 +73,34 @@ public class MergeSort<X extends Comparable<X>> extends SortWithComparableHelper
         Config config = helper.getConfig();
         boolean insurance = config.getBoolean(MERGESORT, INSURANCE);
         boolean noCopy = config.getBoolean(MERGESORT, NOCOPY);
-        if (to <= from + helper.cutoff()) { // XXX check that a cutoff value of 1 effectively stops the cutoff mechanism.
+        if (to <= from + helper.cutoff()) {
             insertionSort.sort(a, from, to);
             return;
         }
+        int mid = from + (to - from) / 2;
 
-        // TO BE IMPLEMENTED  : implement merge sort with insurance and no-copy optimizations
-throw new RuntimeException("implementation missing");
+
+        sort(noCopy ? aux : a, noCopy ? a : aux, from, mid);
+        sort(noCopy ? aux : a, noCopy ? a : aux, mid, to);
+
+
+        if (noCopy) {
+            merge(aux, a, from, mid, to);
+        } else {
+            merge(a, aux, from, mid, to);
+
+            for (int k = from; k < to; k++) {
+                helper.copy(helper.get(aux, k), a, k);
+            }
+        }
+        if (insurance) {
+            for (int k = from + 1; k < to; k++) {
+                if (helper.less(helper.get(a, k), helper.get(a, k - 1))) {
+                    helper.swap(a, k, k - 1);
+                }
+            }
+        }
     }
-
     // CONSIDER combine with MergeSortBasic, perhaps.
     private void merge(X[] sorted, X[] result, int from, int mid, int to) {
         int i = from;

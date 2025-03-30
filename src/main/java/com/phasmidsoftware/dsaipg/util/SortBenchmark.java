@@ -3,28 +3,47 @@
  */
 package com.phasmidsoftware.dsaipg.util;
 
-import com.phasmidsoftware.dsaipg.sort.*;
-import com.phasmidsoftware.dsaipg.sort.classic.BucketSort;
-import com.phasmidsoftware.dsaipg.sort.counting.LSDStringSort;
-import com.phasmidsoftware.dsaipg.sort.counting.MSDStringSort;
-import com.phasmidsoftware.dsaipg.sort.elementary.*;
-import com.phasmidsoftware.dsaipg.sort.linearithmic.TimSort;
-import com.phasmidsoftware.dsaipg.sort.linearithmic.*;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.chrono.ChronoLocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import com.phasmidsoftware.dsaipg.sort.Helper;
 import static com.phasmidsoftware.dsaipg.sort.InstrumentedComparatorHelper.AT;
+import com.phasmidsoftware.dsaipg.sort.NonInstrumentingComparableHelper;
+import com.phasmidsoftware.dsaipg.sort.Sort;
+import com.phasmidsoftware.dsaipg.sort.SortException;
+import com.phasmidsoftware.dsaipg.sort.SortWithComparableHelper;
+import com.phasmidsoftware.dsaipg.sort.SortWithHelper;
+import com.phasmidsoftware.dsaipg.sort.classic.BucketSort;
+import com.phasmidsoftware.dsaipg.sort.counting.LSDStringSort;
+import com.phasmidsoftware.dsaipg.sort.counting.MSDStringSort;
+import com.phasmidsoftware.dsaipg.sort.elementary.BubbleSort;
+import com.phasmidsoftware.dsaipg.sort.elementary.HeapSort;
+import com.phasmidsoftware.dsaipg.sort.elementary.InsertionSort;
+import com.phasmidsoftware.dsaipg.sort.elementary.InsertionSortOpt;
+import com.phasmidsoftware.dsaipg.sort.elementary.RandomSort;
+import com.phasmidsoftware.dsaipg.sort.elementary.ShellSort;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.IntroSort;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.MergeSort;
 import static com.phasmidsoftware.dsaipg.sort.linearithmic.MergeSort.MERGESORT;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.QuickSort_3way;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.QuickSort_Basic;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.QuickSort_DualPivot;
+import com.phasmidsoftware.dsaipg.sort.linearithmic.TimSort;
 import static com.phasmidsoftware.dsaipg.util.Config_Benchmark.isInstrumented;
-import static com.phasmidsoftware.dsaipg.util.SortBenchmarkHelper.*;
+import static com.phasmidsoftware.dsaipg.util.SortBenchmarkHelper.generateRandomLocalDateTimeArray;
+import static com.phasmidsoftware.dsaipg.util.SortBenchmarkHelper.getWords;
+import static com.phasmidsoftware.dsaipg.util.SortBenchmarkHelper.regexLeipzig;
 import static com.phasmidsoftware.dsaipg.util.Utilities.formatWhole;
 
 /**
@@ -62,7 +81,7 @@ public class SortBenchmark {
      * @param args the command-line arguments.
      */
     void doMain(String[] args) {
-        sortStrings(getWordCounts(args));
+        // sortStrings(getWordCounts(args));
         sortIntegers(getWordCounts(args));
     }
 
@@ -97,13 +116,17 @@ public class SortBenchmark {
      */
     void runIntegerSorts(long N) {
         if (N > Integer.MAX_VALUE) throw new SortException("number of elements is too large");
-        double totalWork = getTotalWork(N, config, "benchmarkintegersorters");
-        if (isConfigBenchmarkIntegerSorter("shellsort"))
-            sortIntegersByShellSort((int) N, 12 * estimateRuns(totalWork, Math.pow(N, 4.0 / 3)));
-        if (isConfigBenchmarkIntegerSorter("bucketsort"))
-            runIntegerBucketSort((int) N, estimateRuns(totalWork * 2, N));
-        if (isConfigBenchmarkIntegerSorter("quicksort"))
+        double totalWork = getTotalWork(N, config, BENCHMARKINTEGERSORTERS);
+
+        if (isConfigBenchmarkIntegerSorter("mergesort")) {
+            runIntegerMergeSort((int) N, estimateRuns(totalWork, Math.log(N) * N));
+        }
+        if (isConfigBenchmarkIntegerSorter("quicksortDualPivot")) {
             runIntegerQuickSort((int) N, 10 * estimateRuns(totalWork, Math.log(N) * N));
+        }
+        if (isConfigBenchmarkIntegerSorter("heapsort")) {
+            runIntegerHeapSort((int) N, 10 * estimateRuns(totalWork, Math.log(N) * N));
+        }
     }
 
     /**
@@ -270,7 +293,6 @@ public class SortBenchmark {
      * @param configSection the appropriate config section.
      * @return same as configured totalComparisons, unless n >= 32,000.
      */
-
     private static double getTotalWork(long n, Config config, final String configSection) {
         long z = config.getLong(configSection, "totalwork", 100_000_000L);
         long x = n / 512_000 + 1; // NOTE this is integer division
@@ -359,6 +381,20 @@ public class SortBenchmark {
         SortWithHelper<Integer> sorter = new QuickSort_DualPivot<>(N, runs, config);
         Integer[] numbers = sorter.getHelper().random(Integer.class, Random::nextInt);
         runIntegerSortBenchmark(numbers, N, runs, sorter, sorter::preProcess, timeLoggersLinearithmic);
+    }
+
+    private void runIntegerMergeSort(int N, final int runs) {
+        try (SortWithHelper<Integer> sorter = new MergeSort<>(N, runs, config)) {
+            Integer[] numbers = sorter.getHelper().random(Integer.class, Random::nextInt);
+            runIntegerSortBenchmark(numbers, N, runs, sorter, sorter::preProcess, timeLoggersLinearithmic);
+        }
+    }
+
+    private void runIntegerHeapSort(int N, final int runs) {
+        try (SortWithHelper<Integer> sorter = new HeapSort<>(N, runs, config)) {
+            Integer[] numbers = sorter.getHelper().random(Integer.class, Random::nextInt);
+            runIntegerSortBenchmark(numbers, N, runs, sorter, sorter::preProcess, timeLoggersLinearithmic);
+        }
     }
 
     /**
